@@ -33,6 +33,17 @@ app.get("/dashboard", (req, res) => {
   res.render("dashboard", { title: "Welcome to the Server" });
 });
 
+app.get("/dashboardAdmin", (req, res) => {
+  res.render("dashboardAdmin", { title: "Welcome to the Server" });
+});
+
+app.get("/dashboardAdmin2", (req, res) => {
+  res.render("dashboardAdmin2", { title: "Welcome to the Server" });
+});
+
+app.get("/dashboardAdmin3", (req, res) => {
+  res.render("dashboardAdmin3", { title: "Welcome to the Server" });
+});
 
 // Start server
 const PORT = 3000;
