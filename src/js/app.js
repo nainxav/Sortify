@@ -45,6 +45,10 @@ app.get("/dashboardAdmin3", (req, res) => {
   res.render("dashboardAdmin3", { title: "Welcome to the Server" });
 });
 
+app.get("/user", (req, res) => {
+  res.render("user", { title: "Welcome to the Server" });
+});
+
 // Start server
 const PORT = 3000;
 app.listen(PORT, () => {
