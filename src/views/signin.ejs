@@ -118,7 +118,16 @@
       const password = document.getElementById("password").value;
       const body = { email: email, password: password };
       // const errorDisplay = document.getElementById("passwordMismatchError");
-      const response = await axios.post(`/signin`, body);
+      try {
+        const response = await axios.post(`/signin`, body);
+
+        if (response.status === 200 || response.status === 302) {
+          window.location.href = "/dashboard";
+        }
+      } catch (error) {
+        console.error("Login gagal:", error);
+        alert("Login gagal. Silakan cek email dan password Anda.");
+      }
     }
   </script>
 </html>
