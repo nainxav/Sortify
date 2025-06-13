@@ -141,7 +141,7 @@ app.get("/dashboard", (req, res) => {
   const token = req.cookies.auth_token;
   console.log(token);
   if (!token) {
-    return res.redirect("/login");
+    return res.redirect("/signin");
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
