@@ -14,12 +14,13 @@ const cors = require("cors");
 const { name } = require("ejs");
 const jwt = require("jsonwebtoken");
 
-const session_server = `http://127.0.0.1:8080`;
+// const session_server = `http://127.0.0.1:8080`;
+const session_server = `http://3.27.193.215:8080`;
 
 const db = mysql.createConnection({
-  host: "localhost",
+  host: "database-1.c7swuaqoevmy.ap-southeast-2.rds.amazonaws.com",
   user: "root",
-  password: "",
+  password: "123123123",
   database: "cloudtubes",
 });
 
@@ -90,11 +91,10 @@ app.post("/signin", async (req, res) => {
     const token = response.data.token;
     res.cookie("auth_token", token, {
       httpOnly: true,
-      secure: true, // aktifkan jika menggunakan HTTPS
-      sameSite: "Strict",
+      secure: false, // aktifkan jika menggunakan HTTPS
+      sameSite: "Lax",
     });
-    res.status(200).send({ message: "Login berhasil" });
-    return response.data;
+    res.status(303).redirect("/dashboard");
   } catch (error) {
     if (error.response) {
       console.error(`Error ${error.response.status}:`, error.response.data);
