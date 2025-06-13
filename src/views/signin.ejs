@@ -32,11 +32,7 @@
             >
               Sign in to your account
             </h1>
-            <form
-              class="space-y-4 md:space-y-6"
-              action="#"
-              onsubmit="login(event)"
-            >
+            <form class="space-y-4 md:space-y-6" action="/signin" method="post">
               <div>
                 <label
                   for="email"
@@ -120,10 +116,6 @@
       // const errorDisplay = document.getElementById("passwordMismatchError");
       try {
         const response = await axios.post(`/signin`, body);
-
-        if (response.status === 200 || response.status === 302) {
-          window.location.href = "/dashboard";
-        }
       } catch (error) {
         console.error("Login gagal:", error);
         alert("Login gagal. Silakan cek email dan password Anda.");

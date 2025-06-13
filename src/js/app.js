@@ -147,7 +147,7 @@ app.get("/dashboard", (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const isAdmin = decoded.is_admin;
 
-    if (isAdmin === 1) {
+    if (isAdmin) {
       res.render("admin", { user: decoded });
     } else {
       res.render("dashboard", { user: decoded });
