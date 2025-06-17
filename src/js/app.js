@@ -113,6 +113,12 @@ app.post("/signin", async (req, res) => {
   }
 });
 
+app.delete("/signin", (req, res) => {
+  console.log("User logged out");
+  res.clearCookie("auth_token");
+  res.status(303).redirect("/signin");
+});
+
 app.get("/signup", (req, res) => {
   res.render("signup", { title: "Welcome to the Server" });
 });
@@ -204,25 +210,82 @@ app.get("/dashboard/profile", (req, res) => {
   }
 });
 
-app.delete("/login", (req, res) => {
-  console.log("User logged out");
-  req.session.token = null;
-  res.status(200).json({ message: "Logged out successfully" });
+app.get("/dashboard/order", async (req, res) => {
+  try {
+    const token = req.cookies.auth_token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const isAdmin = decoded.is_admin;
+
+    const userId = decoded.user_id;
+    const userQuery = "SELECT * FROM users WHERE id = ?";
+    const pickupsQuery = `SELECT pickup.*, users.name FROM pickup JOIN users ON pickup.user_id = users.id `;
+    let users;
+    let pickups;
+
+    db.query(pickupsQuery, (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data user:", err);
+        return res.status(500).json({ error: "Gagal mengambil data user" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "User tidak ditemukan" });
+      }
+
+      pickups = results;
+    });
+    db.query(userQuery, [userId], (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data user:", err);
+        return res.status(500).json({ error: "Gagal mengambil data user" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "User tidak ditemukan" });
+      }
+
+      users = results;
+
+      if (isAdmin) {
+        res.render("dashboardAdmin2", { user: users[0], pickups: pickups });
+      } else {
+        res.redirect("/signin");
+      }
+    });
+  } catch (error) {
+    console.error("JWT tidak valid:", error.message);
+    return res.redirect("/signin");
+  }
 });
 
-app.post("/project", async (req, res) => {
-  const { projectname, description } = req.body;
-  const token = req.session.token;
-  const json = JSON.stringify({
-    data: {
-      token: token,
-      title: projectname,
-      description: description,
-    },
-    method: "CREATE",
-  });
-  const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
-  res.redirect("/pm");
+app.get("/dashboard/map", (req, res) => {
+  try {
+    const token = req.cookies.auth_token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const isAdmin = decoded.is_admin;
+
+    const userId = decoded.user_id;
+    const query = "SELECT * FROM users WHERE id = ?";
+    db.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data user:", err);
+        return res.status(500).json({ error: "Gagal mengambil data user" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "User tidak ditemukan" });
+      }
+
+      if (isAdmin) {
+        res.render("dashboardAdmin3", { user: results[0] });
+      } else {
+        res.redirect("/signin");
+      }
+    });
+  } catch (error) {
+    console.error("JWT tidak valid:", error.message);
+    return res.redirect("/signin");
+  }
 });
 
 app.get("/profile", (req, res) => {
@@ -301,6 +364,47 @@ app.patch("/profile", (req, res) => {
 
     res.json({ message: "Data user berhasil diupdate" });
   });
+});
+
+app.post("/pickup", async (req, res) => {
+  const { projectname, description } = req.body;
+  const token = req.session.token;
+  const json = JSON.stringify({
+    data: {
+      token: token,
+      title: projectname,
+      description: description,
+    },
+    method: "CREATE",
+  });
+  const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
+  res.redirect("/pm");
+});
+
+app.patch("/pickup", async (req, res) => {
+  const { status, pickup_id } = req.body;
+  const token = req.cookies.auth_token;
+  if (!token) {
+    return res.status(401).json({ error: "Token tidak ditemukan" });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error("JWT tidak valid:", err.message);
+    return res.status(401).json({ error: "Token tidak valid" });
+  }
+  const json = JSON.stringify({
+    data: {
+      token: token,
+      title: projectname,
+      description: description,
+    },
+    method: "CREATE",
+  });
+  const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
+  res.redirect("/pm");
 });
 
 app.listen(3000, "0.0.0.0", () => {
