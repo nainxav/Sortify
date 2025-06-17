@@ -14,15 +14,22 @@ const cors = require("cors");
 const { name } = require("ejs");
 const jwt = require("jsonwebtoken");
 
-// const session_server = `http://127.0.0.1:8080`;
-const session_server = `http://3.27.193.215:8080`;
+const session_server = `http://127.0.0.1:8080`;
+// const session_server = `http://3.27.193.215:8080`;
 
 const db = mysql.createConnection({
-  host: "database-1.c7swuaqoevmy.ap-southeast-2.rds.amazonaws.com",
+  host: "127.0.0.1",
   user: "root",
-  password: "123123123",
+  password: "",
   database: "cloudtubes",
 });
+
+// const db = mysql.createConnection({
+//   host: "database-1.c7swuaqoevmy.ap-southeast-2.rds.amazonaws.com",
+//   user: "root",
+//   password: "123123123",
+//   database: "cloudtubes",
+// });
 
 db.connect((err) => {
   if (err) {
@@ -147,11 +154,50 @@ app.get("/dashboard", (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const isAdmin = decoded.is_admin;
 
-    if (isAdmin) {
-      res.render("admin", { user: decoded });
-    } else {
-      res.render("dashboard", { user: decoded });
-    }
+    const userId = decoded.user_id;
+    const query = "SELECT * FROM users WHERE id = ?";
+    db.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data user:", err);
+        return res.status(500).json({ error: "Gagal mengambil data user" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "User tidak ditemukan" });
+      }
+
+      if (isAdmin) {
+        res.render("dashboardAdmin", { user: results[0] });
+      } else {
+        res.render("dashboard", { user: results[0] });
+      }
+    });
+  } catch (error) {
+    console.error("JWT tidak valid:", error.message);
+    return res.redirect("/signin");
+  }
+});
+
+app.get("/dashboard/profile", (req, res) => {
+  try {
+    const token = req.cookies.auth_token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const isAdmin = decoded.is_admin;
+
+    const userId = decoded.user_id;
+    const query = "SELECT * FROM users WHERE id = ?";
+    db.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data user:", err);
+        return res.status(500).json({ error: "Gagal mengambil data user" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "User tidak ditemukan" });
+      }
+
+      res.render("user", { user: results[0] });
+    });
   } catch (error) {
     console.error("JWT tidak valid:", error.message);
     return res.redirect("/signin");
@@ -177,6 +223,84 @@ app.post("/project", async (req, res) => {
   });
   const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
   res.redirect("/pm");
+});
+
+app.get("/profile", (req, res) => {
+  const token = req.cookies.auth_token;
+  if (!token) {
+    return res.status(401).json({ error: "Token tidak ditemukan" });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error("JWT tidak valid:", err.message);
+    return res.status(401).json({ error: "Token tidak valid" });
+  }
+
+  const userId = decoded.user_id; // pastikan token memang punya `user_id`
+  const query = "SELECT * FROM users WHERE id = ?";
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Gagal mengambil data user:", err);
+      return res.status(500).json({ error: "Gagal mengambil data user" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "User tidak ditemukan" });
+    }
+
+    res.json(results[0]); // kirimkan hanya satu user
+  });
+});
+
+app.patch("/profile", (req, res) => {
+  const token = req.cookies.auth_token;
+  if (!token) {
+    return res.status(401).json({ error: "Token tidak ditemukan" });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error("JWT tidak valid:", err.message);
+    return res.status(401).json({ error: "Token tidak valid" });
+  }
+
+  const userId = decoded.user_id;
+  const allowedFields = ["name", "email", "password", "phone", "address"]; // ganti sesuai kolom yang boleh diubah
+
+  const updates = [];
+  const values = [];
+
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updates.push(`${field} = ?`);
+      values.push(req.body[field]);
+    }
+  }
+
+  if (updates.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Tidak ada kolom yang diberikan untuk diupdate" });
+  }
+
+  values.push(userId); // untuk kondisi WHERE
+
+  const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error("Gagal mengupdate data user:", err);
+      return res.status(500).json({ error: "Gagal mengupdate data user" });
+    }
+
+    res.json({ message: "Data user berhasil diupdate" });
+  });
 });
 
 app.listen(3000, "0.0.0.0", () => {
