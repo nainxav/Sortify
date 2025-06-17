@@ -14,6 +14,251 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <title>Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .btn-ongoing {
+            background-color: #FF9800;
+        }
+        
+        .btn-show-popup:hover {
+            opacity: 0.9;
+        }
+        
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .popup-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .popup-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .btn-close:hover {
+            color: #333;
+        }
+        
+        .popup-overlay table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .popup-overlay th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .popup-overlay th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+            color: #333;
+            position: sticky;
+            top: 0;
+        }
+        
+        .popup-overlay tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .btn-details {
+            background-color: #2196F3;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-details:hover {
+            background-color: #0b7dda;
+        }
+        
+        .receipt-popup, .timeline-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+        }
+        
+        .receipt-header, .timeline-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .receipt-title, .timeline-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .receipt-subtitle, .timeline-subtitle {
+            font-size: 14px;
+            color: #777;
+        }
+        
+        .receipt-body {
+            margin-bottom: 20px;
+        }
+        
+        .receipt-row, .timeline-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .receipt-label, .timeline-label {
+            font-weight: bold;
+        }
+        
+        .receipt-divider {
+            border-top: 1px dashed #ccc;
+            margin: 15px 0;
+        }
+        
+        .receipt-total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .receipt-footer, .timeline-footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 20px;
+        }
+        
+        /* Styling untuk timeline */
+        .timeline-container {
+            position: relative;
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #ddd;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: -30px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #2196F3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .timeline-content {
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 3px solid #2196F3;
+        }
+        
+        .timeline-time {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+        }
+        
+        .timeline-status {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .timeline-description {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .current-step .timeline-dot {
+            background-color: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .current-step .timeline-content {
+            border-left-color: #4CAF50;
+            background-color: #f0fff0;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
 </head>
 <body class="text-gray-800 font-inter">
     <!--sidenav -->
@@ -38,22 +283,19 @@
                 </a>
             </li>
             <li class="mb-1 group">
-                <a href="" class="flex font-semibold items-center py-2 px-4 text-gray-900 hover:bg-gray-950 hover:text-gray-100 rounded-md group-[.active]:bg-gray-800 group-[.active]:text-white group-[.selected]:bg-gray-950 group-[.selected]:text-gray-100 sidebar-dropdown-toggle">
+                <a href="/dashboardAdmin2" class="flex font-semibold items-center py-2 px-4 text-gray-900 hover:bg-gray-950 hover:text-gray-100 rounded-md group-[.active]:bg-gray-800 group-[.active]:text-white group-[.selected]:bg-gray-950 group-[.selected]:text-gray-100 sidebar-dropdown-toggle">
                     <i class='bx bx-file mr-3 text-lg'></i>
                     <span class="text-sm">Order</span>
                     <i class="ri-arrow-right-s-line ml-auto group-[.selected]:rotate-90"></i>
                 </a>
                 <ul class="pl-7 mt-2 hidden group-[.selected]:block">
                     <li class="mb-4">
-                        <a href="" class="text-gray-900 text-sm flex items-center hover:text-[#f84525] before:contents-[''] before:w-1 before:h-1 before:rounded-full before:bg-gray-300 before:mr-3">All</a>
-                    </li> 
-                    <li class="mb-4">
-                        <a href="" class="text-gray-900 text-sm flex items-center hover:text-[#f84525] before:contents-[''] before:w-1 before:h-1 before:rounded-full before:bg-gray-300 before:mr-3">Roles</a>
+                        <a href="/dashboardAdmin2" class="text-gray-900 text-sm flex items-center hover:text-[#f84525] before:contents-[''] before:w-1 before:h-1 before:rounded-full before:bg-gray-300 before:mr-3">All</a>
                     </li> 
                 </ul>
             </li>
             <li class="mb-1 group">
-                <a href="" class="flex font-semibold items-center py-2 px-4 text-gray-900 hover:bg-gray-950 hover:text-gray-100 rounded-md group-[.active]:bg-gray-800 group-[.active]:text-white group-[.selected]:bg-gray-950 group-[.selected]:text-gray-100">
+                <a href="/dashboardAdmin3" class="flex font-semibold items-center py-2 px-4 text-gray-900 hover:bg-gray-950 hover:text-gray-100 rounded-md group-[.active]:bg-gray-800 group-[.active]:text-white group-[.selected]:bg-gray-950 group-[.selected]:text-gray-100">
                     <i class='bx bx-map mr-3 text-lg'></i>
                     <span class="text-sm">Map</span>
                 </a>
@@ -148,7 +390,7 @@
                                     <a href="#" class="py-2 px-4 flex items-center hover:bg-gray-50 group">
                                         <img src="https://placehold.co/32x32" alt="" class="w-8 h-8 rounded block object-cover align-middle">
                                         <div class="ml-2">
-                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">John Doe</div>
+                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">Shafira Kurnia</div>
                                             <div class="text-[11px] text-gray-400">Hello there!</div>
                                         </div>
                                     </a>
@@ -157,7 +399,7 @@
                                     <a href="#" class="py-2 px-4 flex items-center hover:bg-gray-50 group">
                                         <img src="https://placehold.co/32x32" alt="" class="w-8 h-8 rounded block object-cover align-middle">
                                         <div class="ml-2">
-                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">John Doe</div>
+                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">Shafira Kurnia</div>
                                             <div class="text-[11px] text-gray-400">Hello there!</div>
                                         </div>
                                     </a>
@@ -166,7 +408,7 @@
                                     <a href="#" class="py-2 px-4 flex items-center hover:bg-gray-50 group">
                                         <img src="https://placehold.co/32x32" alt="" class="w-8 h-8 rounded block object-cover align-middle">
                                         <div class="ml-2">
-                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">John Doe</div>
+                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">Shafira Kurnia</div>
                                             <div class="text-[11px] text-gray-400">Hello there!</div>
                                         </div>
                                     </a>
@@ -175,7 +417,7 @@
                                     <a href="#" class="py-2 px-4 flex items-center hover:bg-gray-50 group">
                                         <img src="https://placehold.co/32x32" alt="" class="w-8 h-8 rounded block object-cover align-middle">
                                         <div class="ml-2">
-                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">John Doe</div>
+                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">Shafira Kurnia</div>
                                             <div class="text-[11px] text-gray-400">Hello there!</div>
                                         </div>
                                     </a>
@@ -184,7 +426,7 @@
                                     <a href="#" class="py-2 px-4 flex items-center hover:bg-gray-50 group">
                                         <img src="https://placehold.co/32x32" alt="" class="w-8 h-8 rounded block object-cover align-middle">
                                         <div class="ml-2">
-                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">John Doe</div>
+                                            <div class="text-[13px] text-gray-600 font-medium truncate group-hover:text-blue-500">Shafira Kurnia</div>
                                             <div class="text-[11px] text-gray-400">Hello there!</div>
                                         </div>
                                     </a>
@@ -222,7 +464,7 @@
                             </div>
                         </div>
                         <div class="p-2 md:block text-left">
-                            <h2 class="text-sm font-semibold text-gray-800">John Doe</h2>
+                            <h2 class="text-sm font-semibold text-gray-800">Shafira Kurnia</h2>
                             <p class="text-xs text-gray-500">Administrator</p>
                         </div>                
                     </button>
@@ -265,13 +507,13 @@
                 </div>
             </div>             -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white rounded-md border border-gray-100 p-6 shadow-md shadow-black/5">
+                <div class="bg-white rounded-md border border-gray-100 p-6 shadow-md shadow-black/5" onclick="showCompletedPopup()">
                     <div class="flex justify-between mb-6">
                         <div>
                             <div class="flex items-center mb-1">
-                                <div class="text-2xl font-semibold">Pickup Beres</div>
+                                <div class="text-2xl font-semibold">Pickup Completed</div>
                             </div>
-                            <div class="text-sm font-medium text-gray-400">Ada 1043294 ceritanya</div>
+                            <div class="text-sm font-medium text-gray-400">342 Pickup Done This Month.</div>
                         </div>
                          <div class="dropdown">
                             <button type="button" class="dropdown-toggle text-gray-400 hover:text-gray-600"><i class="ri-more-fill"></i></button>
@@ -289,16 +531,16 @@
                         </div> 
                     </div>
 
-                    <a href="/gebruikers" class="text-green-400 font-medium text-sm hover:text-green-800">View</a>
+                    <a class="text-green-400 font-medium text-sm hover:text-green-800">View</a>
                 </div>
-                <div class="bg-white rounded-md border border-gray-100 p-6 shadow-md shadow-black/5">
+                <div class="bg-white rounded-md border border-gray-100 p-6 shadow-md shadow-black/5" onclick="showOngoingPopup()">
                     <div class="flex justify-between mb-4">
                         <div>
                             <div class="flex items-center mb-1">
-                                <div class="text-2xl font-semibold">Order Masuk</div>
+                                <div class="text-2xl font-semibold">On-Going Pickup</div>
                                 <div class="p-1 rounded bg-emerald-500/10 text-emerald-500 text-[12px] font-semibold leading-none ml-2">+30%</div>
                             </div>
-                            <div class="text-sm font-medium text-gray-400">Ceritanya 94324032</div>
+                            <div class="text-sm font-medium text-gray-400">34 On-Going Pickups.</div>
                         </div>
                          <div class="dropdown">
                             <button type="button" class="dropdown-toggle text-gray-400 hover:text-gray-600"><i class="ri-more-fill"></i></button>
@@ -315,13 +557,13 @@
                             </ul>
                         </div> 
                     </div>
-                    <a href="/dierenartsen" class="text-green-400 font-medium text-sm hover:text-green-800">View</a>
+                    <a class="text-green-400 font-medium text-sm hover:text-green-800">View</a>
                 </div>
                 <div class="bg-white rounded-md border border-gray-100 p-6 shadow-md shadow-black/5">
                     <div class="flex justify-between mb-6">
                         <div>
-                            <div class="text-2xl font-semibold mb-1">Pickup beres</div>
-                            <div class="text-sm font-medium text-gray-400">ada 1 ceritanya</div>
+                            <div class="text-2xl font-semibold mb-1">Incoming Pickup</div>
+                            <div class="text-sm font-medium text-gray-400">32 Pickups.</div>
                         </div>
                          <div class="dropdown">
                             <button type="button" class="dropdown-toggle text-gray-400 hover:text-gray-600"><i class="ri-more-fill"></i></button>
@@ -344,7 +586,7 @@
             <div class="grid grid-cols-1 gap-6 mb-6">
                 <div class="bg-white border border-gray-100 shadow-md shadow-black/5 p-6 rounded-md lg:col-span-2">
                     <div class="flex justify-between mb-4 items-start">
-                        <div class="font-medium">Order Statistics</div>
+                        <div class="font-medium">Pickup Statistics</div>
                          <div class="dropdown">
                             <button type="button" class="dropdown-toggle text-gray-400 hover:text-gray-600"><i class="ri-more-fill"></i></button>
                             <ul class="dropdown-menu shadow-md shadow-black/5 z-30 hidden py-1.5 rounded-md bg-white border border-gray-100 w-full max-w-[140px]">
@@ -391,70 +633,70 @@
                     <div class="rounded-t mb-0 px-0 border-0">
                       <div class="flex flex-wrap items-center px-4 py-2">
                         <div class="relative w-full max-w-full flex-grow flex-1">
-                          <h3 class="font-semibold text-base text-gray-900 dark:text-gray-50">Users</h3>
+                          <h3 class="font-semibold text-base text-gray-900 dark:text-gray-50">Pickup Overview</h3>
                         </div>
                       </div>
                       <div class="block w-full overflow-x-auto">
                         <table class="items-center w-full bg-transparent border-collapse">
                           <thead>
                             <tr>
-                              <th class="px-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-100 align-middle border border-solid border-gray-200 dark:border-gray-500 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">Role</th>
+                              <th class="px-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-100 align-middle border border-solid border-gray-200 dark:border-gray-500 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">City</th>
                               <th class="px-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-100 align-middle border border-solid border-gray-200 dark:border-gray-500 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">Amount</th>
                               <th class="px-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-100 align-middle border border-solid border-gray-200 dark:border-gray-500 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left min-w-140-px"></th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr class="text-gray-700 dark:text-gray-100">
-                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">Administrator</th>
-                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">1</td>
+                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">Jakarta</th>
+                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">1097 Kg</td>
                               <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                                 <div class="flex items-center">
-                                  <span class="mr-2">70%</span>
+                                  <span class="mr-2">10%</span>
                                   <div class="relative w-full">
                                     <div class="overflow-hidden h-2 text-xs flex rounded bg-blue-200">
-                                      <div style="width: 70%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600"></div>
+                                      <div style="width: 10%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600"></div>
                                     </div>
                                   </div>
                                 </div>
                               </td>
                             </tr>
                             <tr class="text-gray-700 dark:text-gray-100">
-                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">User</th>
-                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">6</td>
+                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">Bekasi</th>
+                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">994 Kg</td>
                               <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                                 <div class="flex items-center">
-                                  <span class="mr-2">40%</span>
+                                  <span class="mr-2">8%</span>
                                   <div class="relative w-full">
                                     <div class="overflow-hidden h-2 text-xs flex rounded bg-blue-200">
-                                      <div style="width: 40%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"></div>
+                                      <div style="width: 8%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"></div>
                                     </div>
                                   </div>
                                 </div>
                               </td>
                             </tr>
                             <tr class="text-gray-700 dark:text-gray-100">
-                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">User</th>
-                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">5</td>
+                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">Bogor</th>
+                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">765 Kg</td>
                               <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                                 <div class="flex items-center">
-                                  <span class="mr-2">45%</span>
+                                  <span class="mr-2">7%</span>
                                   <div class="relative w-full">
                                     <div class="overflow-hidden h-2 text-xs flex rounded bg-pink-200">
-                                      <div style="width: 45%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-pink-500"></div>
+                                      <div style="width: 7%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-pink-500"></div>
                                     </div>
                                   </div>
                                 </div>
                               </td>
                             </tr>
                             <tr class="text-gray-700 dark:text-gray-100">
-                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">User</th>
-                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">4</td>
+                              <th class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left">Bandung</th>
+                              <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">774 Kg</td>
                               <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                                 <div class="flex items-center">
-                                  <span class="mr-2">60%</span>
+                                  <span class="mr-2">7%</span>
                                   <div class="relative w-full">
                                     <div class="overflow-hidden h-2 text-xs flex rounded bg-red-200">
-                                      <div style="width: 60%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-red-500"></div>
+                                      <div style="width: 7%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-red-500"></div>
                                     </div>
                                   </div>
                                 </div>
@@ -470,6 +712,132 @@
             </div>
         </div>
       <!-- End Content -->
+
+      <!-- Popup pickup selesai -->
+    <div class="popup-overlay" id="completedPopup" >
+        <div class="popup-content">
+            <div class="popup-header">
+                <span class="popup-title">Data Pickup yang Berhasil Dilakukan</span>
+                <button class="btn-close" onclick="hidePopup('completedPopup')">&times;</button>
+            </div>
+            <div class="table-container">
+                <table id="completedTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Lokasi</th>
+                            <th>Berat (kg)</th>
+                            <th>Tanggal Diminta</th>
+                            <th>Tanggal Selesai</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="completedTableBody">
+                        <!-- Data akan diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup pickup ongoing -->
+    <div class="popup-overlay" id="ongoingPopup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <span class="popup-title">Data Pickup yang Sedang Berlangsung</span>
+                <button class="btn-close" onclick="hidePopup('ongoingPopup')">&times;</button>
+            </div>
+            <div class="table-container">
+                <table id="ongoingTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Lokasi</th>
+                            <th>Estimasi Berat (kg)</th>
+                            <th>Tanggal Diminta</th>
+                            <th>Status Terkini</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ongoingTableBody">
+                        <!-- Data akan diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Popup -->
+    <div class="receipt-popup" id="receiptPopup">
+        <div class="receipt-header">
+            <div class="receipt-title">RECEIPT PICKUP SAMPAH</div>
+            <div class="receipt-subtitle">Nomor: <span id="receiptId">PK-001</span></div>
+        </div>
+        
+        <div class="receipt-body">
+            <div class="receipt-row">
+                <span class="receipt-label">Tanggal Pickup:</span>
+                <span id="receiptDate">12 Mei 2023</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Lokasi:</span>
+                <span id="receiptLocation">Jl. Merdeka No. 12, Jakarta</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Petugas:</span>
+                <span id="receiptOfficer">Budi Santoso</span>
+            </div>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-row">
+                <span class="receipt-label">Jenis Sampah:</span>
+                <span id="receiptWasteType">Organik</span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Berat:</span>
+                <span id="receiptWeight">5.2 kg</span>
+            </div>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-row">
+                <span class="receipt-label">Harga per kg:</span>
+                <span id="receiptPricePerKg">Rp 2.000</span>
+            </div>
+            <div class="receipt-row receipt-total">
+                <span>Total:</span>
+                <span id="receiptTotal">Rp 10.400</span>
+            </div>
+        </div>
+        
+        <div class="receipt-footer">
+            Terima kasih telah mendukung program pengelolaan sampah yang berkelanjutan
+        </div>
+        
+        <button class="btn-close" onclick="hideReceipt()" style="position: absolute; top: 10px; right: 10px;">&times;</button>
+    </div>
+
+    <!-- Timeline Popup -->
+    <div class="timeline-popup" id="timelinePopup">
+        <div class="timeline-header">
+            <div class="timeline-title">PROGRESS PICKUP</div>
+            <div class="timeline-subtitle">ID: <span id="timelineId">PK-004</span></div>
+        </div>
+        
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+            
+            <!-- Timeline items akan diisi oleh JavaScript -->
+            <div id="timelineItems"></div>
+        </div>
+        
+        <div class="timeline-footer">
+            Petugas sedang dalam perjalanan untuk mengambil sampah Anda
+        </div>
+        
+        <button class="btn-close" onclick="hideTimeline()" style="position: absolute; top: 10px; right: 10px;">&times;</button>
+    </div>
     </main>
 
     <script src="https://unpkg.com/@popperjs/core@2"></script>
@@ -676,7 +1044,237 @@
         }
         // end: Chart
 
+        // Data contoh pickup yang berhasil
+        const completedPickups = [
+            { 
+                id: "PK-001", 
+                location: "Jl. Thousand Sunny Go, Jakarta", 
+                weight: 5.2, 
+                dateRequested: "2023-05-10", 
+                dateCompleted: "2023-05-12",
+                officer: "Monkey D. Luffy",
+                wasteType: "Organik",
+                pricePerKg: 2000
+            },
+            { 
+                id: "PK-002", 
+                location: "Jl. Merry Go, Bandung", 
+                weight: 3.8, 
+                dateRequested: "2023-05-11", 
+                dateCompleted: "2023-05-13",
+                officer: "Nico Robin",
+                wasteType: "Anorganik",
+                pricePerKg: 1500
+            },
+            { 
+                id: "PK-003", 
+                location: "Jl. Enies Lobby No.9, Surabaya", 
+                weight: 7.5, 
+                dateRequested: "2023-05-12", 
+                dateCompleted: "2023-05-14",
+                officer: "Vinsmoke Sanji",
+                wasteType: "Campuran",
+                pricePerKg: 1000
+            }
+        ];
+
+        const ongoingPickups = [
+            { 
+                id: "PK-004", 
+                location: "Jl. Wano Kuni, Medan", 
+                estimatedWeight: 4.5, 
+                dateRequested: "2023-05-15",
+                currentStatus: "Dalam perjalanan",
+                timeline: [
+                    {
+                        time: "2023-05-15 08:30",
+                        status: "Permintaan diterima",
+                        description: "Operator menerima permintaan pickup"
+                    },
+                    {
+                        time: "2023-05-15 09:15",
+                        status: "Petugas ditugaskan",
+                        description: "Roronoa Zoro ditugaskan untuk pickup"
+                    },
+                    {
+                        time: "2023-05-15 10:00",
+                        status: "Dalam perjalanan",
+                        description: "Petugas sedang menuju lokasi",
+                        current: true
+                    }
+                ]
+            },
+            { 
+                id: "PK-005", 
+                location: "Jl. Water Seven, Yogyakarta", 
+                estimatedWeight: 6.0, 
+                dateRequested: "2023-05-15",
+                currentStatus: "Menunggu petugas",
+                timeline: [
+                    {
+                        time: "2023-05-15 09:45",
+                        status: "Permintaan diterima",
+                        description: "Operator menerima permintaan pickup"
+                    },
+                    {
+                        time: "2023-05-15 10:00",
+                        status: "Menunggu petugas",
+                        description: "Menunggu petugas tersedia",
+                        current: true
+                    }
+                ]
+            }
+        ];
+
+        function showCompletedPopup() {
+            const popup = document.getElementById('completedPopup');
+            popup.style.display = 'flex';
+            
+            const tableBody = document.getElementById('completedTableBody');
+            tableBody.innerHTML = '';
+            
+            completedPickups.forEach(pickup => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${pickup.id}</td>
+                    <td>${pickup.location}</td>
+                    <td>${pickup.weight}</td>
+                    <td>${formatDate(pickup.dateRequested)}</td>
+                    <td>${formatDate(pickup.dateCompleted)}</td>
+                    <td><button class="btn-details" onclick="showReceipt('${pickup.id}')">Details</button></td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
         
+        function showOngoingPopup() {
+            const popup = document.getElementById('ongoingPopup');
+            popup.style.display = 'flex';
+            
+            const tableBody = document.getElementById('ongoingTableBody');
+            tableBody.innerHTML = '';
+            
+            ongoingPickups.forEach(pickup => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${pickup.id}</td>
+                    <td>${pickup.location}</td>
+                    <td>${pickup.estimatedWeight}</td>
+                    <td>${formatDate(pickup.dateRequested)}</td>
+                    <td>${pickup.currentStatus}</td>
+                    <td><button class="btn-details" onclick="showTimeline('${pickup.id}')">Details</button></td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function showReceipt(pickupId) {
+            const pickup = completedPickups.find(item => item.id === pickupId);
+            if (!pickup) return;
+            
+            // Isi data receipt
+            document.getElementById('receiptId').textContent = pickup.id;
+            document.getElementById('receiptDate').textContent = formatDate(pickup.dateCompleted);
+            document.getElementById('receiptLocation').textContent = pickup.location;
+            document.getElementById('receiptOfficer').textContent = pickup.officer;
+            document.getElementById('receiptWasteType').textContent = pickup.wasteType;
+            document.getElementById('receiptWeight').textContent = `${pickup.weight} kg`;
+            document.getElementById('receiptPricePerKg').textContent = `Rp ${pickup.pricePerKg.toLocaleString('id-ID')}`;
+            
+            const total = pickup.weight * pickup.pricePerKg;
+            document.getElementById('receiptTotal').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+            
+            document.getElementById('receiptPopup').style.display = 'block';
+        }
+        
+        function showTimeline(pickupId) {
+            const pickup = ongoingPickups.find(item => item.id === pickupId);
+            if (!pickup) return;
+            
+            document.getElementById('timelineId').textContent = pickup.id;
+            
+            const timelineContainer = document.getElementById('timelineItems');
+            timelineContainer.innerHTML = '';
+            
+            pickup.timeline.forEach((item, index) => {
+                const timelineItem = document.createElement('div');
+                timelineItem.className = `timeline-item ${item.current ? 'current-step' : ''}`;
+                
+                timelineItem.innerHTML = `
+                    <div class="timeline-dot">${index + 1}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-time">${formatDateTime(item.time)}</div>
+                        <div class="timeline-status">${item.status}</div>
+                        <div class="timeline-description">${item.description}</div>
+                    </div>
+                `;
+                
+                timelineContainer.appendChild(timelineItem);
+            });
+            
+            const footer = document.querySelector('#timelinePopup .timeline-footer');
+            const currentStatus = pickup.currentStatus.toLowerCase();
+            
+            if (currentStatus.includes('perjalanan')) {
+                footer.textContent = "Petugas sedang dalam perjalanan untuk mengambil sampah Anda";
+            } else if (currentStatus.includes('menunggu')) {
+                footer.textContent = "Menunggu petugas tersedia untuk menjemput sampah Anda";
+            } else {
+                footer.textContent = "Proses pickup sedang berlangsung";
+            }
+            
+            document.getElementById('timelinePopup').style.display = 'block';
+        }
+        
+        function hideReceipt() {
+            document.getElementById('receiptPopup').style.display = 'none';
+        }
+        
+        function hideTimeline() {
+            document.getElementById('timelinePopup').style.display = 'none';
+        }
+        
+        function hidePopup(popupId) {
+            document.getElementById(popupId).style.display = 'none';
+        }
+        
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('id-ID', options);
+        }
+        
+        function formatDateTime(dateTimeString) {
+            const options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return new Date(dateTimeString.replace(' ', 'T')).toLocaleDateString('id-ID', options);
+        }
+        
+        window.addEventListener('click', function(event) {
+            if (event.target === document.getElementById('completedPopup')) {
+                hidePopup('completedPopup');
+            }
+            
+            if (event.target === document.getElementById('ongoingPopup')) {
+                hidePopup('ongoingPopup');
+            }
+            
+            if (event.target === document.getElementById('receiptPopup')) {
+                hideReceipt();
+            }
+            
+            if (event.target === document.getElementById('timelinePopup')) {
+                hideTimeline();
+            }
+        });
     </script>
 
 </body>
