@@ -80,6 +80,16 @@ async function valid_session(req, res) {
   return valid;
 }
 
+async function asyncQuery(query) {
+  try {
+    const [results] = await db.promise().query(query);
+    return results; // hasil query
+  } catch (err) {
+    console.error("Gagal mengambil data :", err);
+    throw err;
+  }
+}
+
 app.get("/", (req, res) => {
   res.render("index", { title: "Welcome to the Server" });
 });
@@ -160,15 +170,18 @@ app.get("/dashboard", (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const isAdmin = decoded.is_admin;
 
+    let user;
     let pickups;
     let donePickup;
     let cancelledPickup;
     let pendingPickup;
 
     const userId = decoded.user_id;
-    const userQuery = "SELECT * FROM users WHERE id = ?";
+    const userQuery =
+      "SELECT id,name,email,is_admin,created_at,updated_at,longitude,latitude,alamat FROM users WHERE id = ?";
     // const pickupsQuery = `SELECT * FROM pickup`;
     // const doneQuery = `SELECT * FROM pickup WHERE user_id = ${userId} AND status = 'Done'`;
+    const userPickupsQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE user_id = ${userId} AND pickup.status = 'Done';`;
     const doneQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Done';`;
     const cancelledQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Cancelled';`;
     const pendingQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Pending';`;
@@ -182,33 +195,6 @@ app.get("/dashboard", (req, res) => {
     //   pickups = results;
     // });
 
-    db.query(doneQuery, (err, results) => {
-      if (err) {
-        console.error("Gagal mengambil data pickup:", err);
-        return res.status(500).json({ error: "Gagal mengambil data pickup" });
-      }
-
-      donePickup = results;
-    });
-
-    db.query(cancelledQuery, (err, results) => {
-      if (err) {
-        console.error("Gagal mengambil data pickup:", err);
-        return res.status(500).json({ error: "Gagal mengambil data pickup" });
-      }
-
-      cancelledPickup = results;
-    });
-
-    db.query(pendingQuery, (err, results) => {
-      if (err) {
-        console.error("Gagal mengambil data pickup:", err);
-        return res.status(500).json({ error: "Gagal mengambil data pickup" });
-      }
-
-      pendingPickup = results;
-    });
-
     db.query(userQuery, [userId], (err, results) => {
       if (err) {
         console.error("Gagal mengambil data user:", err);
@@ -219,19 +205,61 @@ app.get("/dashboard", (req, res) => {
         return res.status(404).json({ error: "User tidak ditemukan" });
       }
 
+      user = results[0];
+
       if (isAdmin) {
-        res.render("dashboardAdmin", {
-          user: results[0],
-          donePickups: donePickup,
-          cancelledPickups: cancelledPickup,
-          pendingPickups: pendingPickup,
+        db.query(doneQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          donePickup = results;
+        });
+
+        db.query(cancelledQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          cancelledPickup = results;
+        });
+
+        db.query(pendingQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          pendingPickup = results;
+          res.render("dashboardAdmin", {
+            user: user,
+            donePickups: donePickup,
+            cancelledPickups: cancelledPickup,
+            pendingPickups: pendingPickup,
+          });
         });
       } else {
-        res.render("dashboard", {
-          user: results[0],
-          donePickups: donePickup,
-          cancelledPickups: cancelledPickup,
-          pendingPickups: pendingPickup,
+        db.query(userPickupsQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          pickups = results;
+          res.render("dashboard", {
+            user: user,
+            pickups: pickups,
+          });
         });
       }
     });
