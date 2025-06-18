@@ -160,9 +160,56 @@ app.get("/dashboard", (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const isAdmin = decoded.is_admin;
 
+    let pickups;
+    let donePickup;
+    let cancelledPickup;
+    let pendingPickup;
+
     const userId = decoded.user_id;
-    const query = "SELECT * FROM users WHERE id = ?";
-    db.query(query, [userId], (err, results) => {
+    const userQuery = "SELECT * FROM users WHERE id = ?";
+    // const pickupsQuery = `SELECT * FROM pickup`;
+    // const doneQuery = `SELECT * FROM pickup WHERE user_id = ${userId} AND status = 'Done'`;
+    const doneQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Done';`;
+    const cancelledQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Cancelled';`;
+    const pendingQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Pending';`;
+
+    // db.query(pickupsQuery, (err, results) => {
+    //   if (err) {
+    //     console.error("Gagal mengambil data pickup:", err);
+    //     return res.status(500).json({ error: "Gagal mengambil data pickup" });
+    //   }
+
+    //   pickups = results;
+    // });
+
+    db.query(doneQuery, (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data pickup:", err);
+        return res.status(500).json({ error: "Gagal mengambil data pickup" });
+      }
+
+      donePickup = results;
+    });
+
+    db.query(cancelledQuery, (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data pickup:", err);
+        return res.status(500).json({ error: "Gagal mengambil data pickup" });
+      }
+
+      cancelledPickup = results;
+    });
+
+    db.query(pendingQuery, (err, results) => {
+      if (err) {
+        console.error("Gagal mengambil data pickup:", err);
+        return res.status(500).json({ error: "Gagal mengambil data pickup" });
+      }
+
+      pendingPickup = results;
+    });
+
+    db.query(userQuery, [userId], (err, results) => {
       if (err) {
         console.error("Gagal mengambil data user:", err);
         return res.status(500).json({ error: "Gagal mengambil data user" });
@@ -173,9 +220,19 @@ app.get("/dashboard", (req, res) => {
       }
 
       if (isAdmin) {
-        res.render("dashboardAdmin", { user: results[0] });
+        res.render("dashboardAdmin", {
+          user: results[0],
+          donePickups: donePickup,
+          cancelledPickups: cancelledPickup,
+          pendingPickups: pendingPickup,
+        });
       } else {
-        res.render("dashboard", { user: results[0] });
+        res.render("dashboard", {
+          user: results[0],
+          donePickups: donePickup,
+          cancelledPickups: cancelledPickup,
+          pendingPickups: pendingPickup,
+        });
       }
     });
   } catch (error) {
@@ -384,6 +441,7 @@ app.post("/pickup", async (req, res) => {
 app.patch("/pickup", async (req, res) => {
   const { status, pickup_id } = req.body;
   const token = req.cookies.auth_token;
+  const query = "UPDATE pickup SET status = ? WHERE id = ?";
   if (!token) {
     return res.status(401).json({ error: "Token tidak ditemukan" });
   }
@@ -391,20 +449,37 @@ app.patch("/pickup", async (req, res) => {
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user_id = decoded.user_id;
   } catch (err) {
     console.error("JWT tidak valid:", err.message);
     return res.status(401).json({ error: "Token tidak valid" });
   }
-  const json = JSON.stringify({
-    data: {
-      token: token,
-      title: projectname,
-      description: description,
-    },
-    method: "CREATE",
+
+  console.log(status);
+  console.log(pickup_id);
+
+  db.query(query, [status, pickup_id], (err, result) => {
+    if (err) {
+      console.error("Error updating status:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Pickup not found" });
+    }
+
+    res.json({ message: "Status updated successfully" });
   });
-  const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
-  res.redirect("/pm");
+  // const json = JSON.stringify({
+  //   data: {
+  //     token: token,
+  //     title: projectname,
+  //     description: description,
+  //   },
+  //   method: "CREATE",
+  // });
+  // const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
+  // res.redirect("/pm");
 });
 
 app.listen(3000, "0.0.0.0", () => {
