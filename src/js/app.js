@@ -13,6 +13,7 @@ const fs = require("fs");
 const cors = require("cors");
 const { name } = require("ejs");
 const jwt = require("jsonwebtoken");
+const AWS = require("aws-sdk");
 
 const session_server = `http://127.0.0.1:8080`;
 // const session_server = `http://3.27.193.215:8080`;
@@ -38,6 +39,16 @@ db.connect((err) => {
   }
   console.log("Berhasil terhubung ke database MySQL.");
 });
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
+const s3 = new AWS.S3();
+
+app.use(cors());
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../views"));
@@ -449,6 +460,42 @@ app.patch("/profile", (req, res) => {
 
     res.json({ message: "Data user berhasil diupdate" });
   });
+});
+
+app.get("/profile/photo", async (req, res) => {
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ error: "Token tidak ditemukan" });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error("JWT tidak valid:", err.message);
+    return res.status(401).json({ error: "Token tidak valid" });
+  }
+
+  const userId = decoded.user_id;
+
+  const params = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: `${userId}.jpg`,
+  };
+
+  try {
+    const data = await s3.getObject(params).promise();
+
+    res.set("Content-Type", data.ContentType);
+    res.send(data.Body);
+  } catch (err) {
+    if (err.code === "NoSuchKey") {
+      res.status(404).send("File not found");
+    } else {
+      res.status(500).send(err.message);
+    }
+  }
 });
 
 app.post("/pickup", async (req, res) => {
