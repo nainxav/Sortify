@@ -13,23 +13,24 @@ const fs = require("fs");
 const cors = require("cors");
 const { name } = require("ejs");
 const jwt = require("jsonwebtoken");
+const AWS = require("aws-sdk");
 
-const session_server = `http://127.0.0.1:8080`;
-// const session_server = `http://3.27.193.215:8080`;
-
-const db = mysql.createConnection({
-  host: "127.0.0.1",
-  user: "root",
-  password: "",
-  database: "cloudtubes",
-});
+// const session_server = `http://127.0.0.1:8080`;
+const session_server = `http://3.107.58.109:8080`;
 
 // const db = mysql.createConnection({
-//   host: "database-1.c7swuaqoevmy.ap-southeast-2.rds.amazonaws.com",
+//   host: "127.0.0.1",
 //   user: "root",
-//   password: "123123123",
+//   password: "",
 //   database: "cloudtubes",
 // });
+
+const db = mysql.createConnection({
+  host: "database-1.c7swuaqoevmy.ap-southeast-2.rds.amazonaws.com",
+  user: "root",
+  password: "123123123",
+  database: "cloudtubes",
+});
 
 db.connect((err) => {
   if (err) {
@@ -38,6 +39,16 @@ db.connect((err) => {
   }
   console.log("Berhasil terhubung ke database MySQL.");
 });
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
+const s3 = new AWS.S3();
+
+app.use(cors());
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../views"));
@@ -78,6 +89,16 @@ async function valid_session(req, res) {
     return valid;
   }
   return valid;
+}
+
+async function asyncQuery(query) {
+  try {
+    const [results] = await db.promise().query(query);
+    return results; // hasil query
+  } catch (err) {
+    console.error("Gagal mengambil data :", err);
+    throw err;
+  }
 }
 
 app.get("/", (req, res) => {
@@ -160,9 +181,32 @@ app.get("/dashboard", (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const isAdmin = decoded.is_admin;
 
+    let user;
+    let pickups;
+    let donePickup;
+    let cancelledPickup;
+    let pendingPickup;
+
     const userId = decoded.user_id;
-    const query = "SELECT * FROM users WHERE id = ?";
-    db.query(query, [userId], (err, results) => {
+    const userQuery =
+      "SELECT id,name,email,is_admin,created_at,updated_at,longitude,latitude,alamat FROM users WHERE id = ?";
+    // const pickupsQuery = `SELECT * FROM pickup`;
+    // const doneQuery = `SELECT * FROM pickup WHERE user_id = ${userId} AND status = 'Done'`;
+    const userPickupsQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE user_id = ${userId} AND pickup.status = 'Done';`;
+    const doneQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Done';`;
+    const cancelledQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Cancelled';`;
+    const pendingQuery = `SELECT pickup.*, users.alamat FROM pickup JOIN users ON pickup.user_id = users.id WHERE pickup.status = 'Pending';`;
+
+    // db.query(pickupsQuery, (err, results) => {
+    //   if (err) {
+    //     console.error("Gagal mengambil data pickup:", err);
+    //     return res.status(500).json({ error: "Gagal mengambil data pickup" });
+    //   }
+
+    //   pickups = results;
+    // });
+
+    db.query(userQuery, [userId], (err, results) => {
       if (err) {
         console.error("Gagal mengambil data user:", err);
         return res.status(500).json({ error: "Gagal mengambil data user" });
@@ -172,10 +216,62 @@ app.get("/dashboard", (req, res) => {
         return res.status(404).json({ error: "User tidak ditemukan" });
       }
 
+      user = results[0];
+
       if (isAdmin) {
-        res.render("dashboardAdmin", { user: results[0] });
+        db.query(doneQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          donePickup = results;
+        });
+
+        db.query(cancelledQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          cancelledPickup = results;
+        });
+
+        db.query(pendingQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          pendingPickup = results;
+          res.render("dashboardAdmin", {
+            user: user,
+            donePickups: donePickup,
+            cancelledPickups: cancelledPickup,
+            pendingPickups: pendingPickup,
+          });
+        });
       } else {
-        res.render("dashboard", { user: results[0] });
+        db.query(userPickupsQuery, (err, results) => {
+          if (err) {
+            console.error("Gagal mengambil data pickup:", err);
+            return res
+              .status(500)
+              .json({ error: "Gagal mengambil data pickup" });
+          }
+
+          pickups = results;
+          res.render("dashboard", {
+            user: user,
+            pickups: pickups,
+          });
+        });
       }
     });
   } catch (error) {
@@ -366,6 +462,42 @@ app.patch("/profile", (req, res) => {
   });
 });
 
+app.get("/profile/photo", async (req, res) => {
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ error: "Token tidak ditemukan" });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error("JWT tidak valid:", err.message);
+    return res.status(401).json({ error: "Token tidak valid" });
+  }
+
+  const userId = decoded.user_id;
+
+  const params = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: `${userId}.jpg`,
+  };
+
+  try {
+    const data = await s3.getObject(params).promise();
+
+    res.set("Content-Type", data.ContentType);
+    res.send(data.Body);
+  } catch (err) {
+    if (err.code === "NoSuchKey") {
+      res.status(404).send("File not found");
+    } else {
+      res.status(500).send(err.message);
+    }
+  }
+});
+
 app.post("/pickup", async (req, res) => {
   const { projectname, description } = req.body;
   const token = req.session.token;
@@ -384,6 +516,7 @@ app.post("/pickup", async (req, res) => {
 app.patch("/pickup", async (req, res) => {
   const { status, pickup_id } = req.body;
   const token = req.cookies.auth_token;
+  const query = "UPDATE pickup SET status = ? WHERE id = ?";
   if (!token) {
     return res.status(401).json({ error: "Token tidak ditemukan" });
   }
@@ -391,20 +524,37 @@ app.patch("/pickup", async (req, res) => {
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user_id = decoded.user_id;
   } catch (err) {
     console.error("JWT tidak valid:", err.message);
     return res.status(401).json({ error: "Token tidak valid" });
   }
-  const json = JSON.stringify({
-    data: {
-      token: token,
-      title: projectname,
-      description: description,
-    },
-    method: "CREATE",
+
+  console.log(status);
+  console.log(pickup_id);
+
+  db.query(query, [status, pickup_id], (err, result) => {
+    if (err) {
+      console.error("Error updating status:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Pickup not found" });
+    }
+
+    res.json({ message: "Status updated successfully" });
   });
-  const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
-  res.redirect("/pm");
+  // const json = JSON.stringify({
+  //   data: {
+  //     token: token,
+  //     title: projectname,
+  //     description: description,
+  //   },
+  //   method: "CREATE",
+  // });
+  // const projects = await axios.post(`${egeos_server}/api/gis/api.php`, json);
+  // res.redirect("/pm");
 });
 
 app.listen(3000, "0.0.0.0", () => {
